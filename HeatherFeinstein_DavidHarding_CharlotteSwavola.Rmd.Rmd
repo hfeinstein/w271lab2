@@ -23,7 +23,7 @@ library(stargazer)
 
 # Load dataset
 cereal <- read.csv("cereal_dillons.csv")
-head(cereal)
+cereal[1:10,-1]
 # describe(cereal)
 ```
 
@@ -68,22 +68,29 @@ stripchart(x = cereal2$sodium ~ cereal2$Shelf, lwd = 2, col = "green", method = 
 ```{r}
 par(mar=c(2, 1, 2, 5),xpd = TRUE)
 shelf.colors<-ifelse(test = cereal2$Shelf=="1", yes = "black", 
-                    no = ifelse(test = cereal2$Shelf=="2", yes = "blue", no = ifelse(test = cereal2$Shelf=="3", yes = "green", no = "red")))
+                    no = ifelse(test = cereal2$Shelf=="2", yes = "blue", 
+                    no = ifelse(test = cereal2$Shelf=="3", yes = "green", no = "red")))
 parcoord(x = cereal2[, c(2,3,4)], col = shelf.colors, var.label = TRUE)
 title(main="Weighted Component Content by Shelf")
 legend(3,0.5, legend = c("Shelf 4", "Shelf 3", "Shelf 2", "Shelf 1"), lty = "solid",
       col=c("red", "green", "blue", "black"), bty = 'n')                   
 ```
 
-b. (cont'd) Discuss if possible content differences exist among the shelves.    
-- Shelf 1 has a higher, narrow sodium distribution relative to the wide distributions of other components and the sodium distribution - for other shelves.     
-- Shelf 2 has a higher, narrow distribution for sugar content, and hits the maximum fat content (though not for all samples).     
-- Shelf 3 maintains a wide distribution across all three components. It has the samples with the lowest sugar, fat, and sodium content. 
-- Shelf 4 has wide distributions for all components that are generally lower than the component distributions of other shelves. 
+b. (cont'd) Discuss if possible content differences exist among the shelves. 
+
+*Shelf 1 cereals have higher average sodium and lower average fat, relative to the other three shelves, though the range of fat content is wide.*  
+
+*Shelf 2 cereals have a notably higher average sugar content, and all cereals on the shelf have a sugar content above 0.5. The sodium content is average, but has a narrower range, relative to other shelves, with only one cereal in the top or bottom quartile of sodium content.  *
+
+*Shelf 3 maintains a wide distribution across all three components of sugar, fat and sodium. It includes cereals that have the lowest sugar, fat, and sodium content. *
+
+*Shelf 4 does have two cereals with no fat, otherwise it is notable for not having cereals with extremely high or low sugar or sodium content.*
+
+
 \newpage
 c. The response has values of $1, 2, 3,$ and $4$. Under what setting would it be desirable to take into account ordinality. Do you think that this setting occurs here?
 
-Ordinality could be considered for visibiility by a specific audience. For example, if you were examining kids' cereal specifically, the shelves would likely have the levels 2,1,3,4, for ordinality, as they are the most likely to be seen in that order by that specific audience. For fancy organic, perhaps 3,4,2,1- which corresponds to the eye levels of (most) adults. In this case, we haven't specified a cereal type or a particular audience to target, so an ordinality setting is not relevant.
+*If there are specific criteria that can be used to compare and rank shelves, then ordinality would be an important consideration. For example, if cereal manufacturers are charged for shelf space, the shelves could be ranked by cost. Alternatively, they could be ranked for visibility by a specific audience, such as children or adults. It seems likely that the rank order would vary by criteria: For example, if you were considering children, the shelves might have the rank order 2,1,3,4 for most to least visible. For adults, it might be 3,4,2,1. In this case, we haven't specified any criteria, so it is not appropriate to assign an ordinal ranking.*
 
 d. Estimate a **multinomial regression model with linear forms of the sugar, fat, and sodium variables**. Perform **LRTs** to examine the importance of each explanatory variable.
 
@@ -98,7 +105,7 @@ summary(mod.fit)
 mod.fit.Ho_sugar<-multinom(formula = Shelf ~ fat + sodium, data=cereal2, trace=FALSE)
 anova(mod.fit.Ho_sugar, mod.fit)  
 ```
-The p-value for the likelihood ratio test is less than 0.05, therefore we can reject the null hypothesis for sugar, concluding that sugar is significant to the model.
+*The p-value for the likelihood ratio test is less than 0.05, therefore we can reject the null hypothesis for sugar, concluding that sugar is significant to the model.*
 
 
 ```{r}
@@ -106,7 +113,7 @@ The p-value for the likelihood ratio test is less than 0.05, therefore we can re
 mod.fit.Ho_fat<-multinom(formula = Shelf ~ sugar + sodium, data=cereal2, trace=FALSE)
 anova(mod.fit.Ho_fat, mod.fit)   
 ```
-We cannot reject the null hypothesis that fat is not significant to the model.
+*We cannot reject the null hypothesis that fat is not significant to the model.*
 
 
 ```{r}
@@ -114,29 +121,34 @@ We cannot reject the null hypothesis that fat is not significant to the model.
 mod.fit.Ho_sodium<-multinom(formula = Shelf ~ sugar + fat, data=cereal2, trace=FALSE)
 anova(mod.fit.Ho_sodium, mod.fit)   
 ```
-For sodium, the p-value is less than 0.05. We can reject the null hypothesis and conclude that sodium is significant to the model
+*For sodium, the p-value is less than 0.05. We can reject the null hypothesis and conclude that sodium is significant to the model.*
 
 \newpage
 e. Show that there are no significant interactions among the explanatory variables (including an interaction among all three variables).
 
 ```{r}
-# LRT for sugar*sodium interaction term:
-mod.fit.Ho_sugar_sodium <- multinom(formula = Shelf ~ sugar + fat + sodium + sugar:sodium, data=cereal2, maxit=200, trace=FALSE)
-anova(mod.fit.Ho_sugar_sodium, mod.fit)   
+# The existing model is the null hypothesis model with no interaction terms. 
+# LRT for alternative model with sugar*sodium interaction term:
+mod.fit.Ha_sugar_sodium <- multinom(formula = Shelf ~ sugar + fat + sodium + sugar:sodium,
+                                    data=cereal2, maxit=200, trace=FALSE)
+anova(mod.fit.Ha_sugar_sodium, mod.fit)   
 
-# LRT for sugar*fat interaction term:
-mod.fit.Ho_sugar_fat <- multinom(formula = Shelf ~ sugar + fat + sodium + sugar:fat, data=cereal2, maxit=200, trace=FALSE)
-anova(mod.fit.Ho_sugar_fat, mod.fit)  
+# LRT for alternative model with sugar*fat interaction term:
+mod.fit.Ha_sugar_fat <- multinom(formula = Shelf ~ sugar + fat + sodium + sugar:fat,
+                                 data=cereal2, maxit=200, trace=FALSE)
+anova(mod.fit.Ha_sugar_fat, mod.fit)  
 
-# LRT for fat*sodium interaction term:
-mod.fit.Ho_fat_sodium <- multinom(formula = Shelf ~ sugar + fat + sodium + sugar:sodium, data=cereal2, maxit=200, trace=FALSE)
-anova(mod.fit.Ho_fat_sodium, mod.fit)  
+# LRT for alternative model with fat*sodium interaction term:
+mod.fit.Ha_fat_sodium <- multinom(formula = Shelf ~ sugar + fat + sodium + sugar:sodium,
+                                  data=cereal2, maxit=200, trace=FALSE)
+anova(mod.fit.Ha_fat_sodium, mod.fit)  
 
-# LRT for sugar*fat*sodium interaction term:
-mod.fit.Ho_sugar_fat_sodium <- multinom(formula = Shelf ~ sugar + fat + sodium + sugar:fat:sodium, data=cereal2, maxit=200, trace=FALSE)
-anova(mod.fit.Ho_sugar_fat_sodium, mod.fit)  
+# LRT for alternative model with sugar*fat*sodium interaction term:
+mod.fit.Ha_sugar_fat_sodium <- multinom(formula = Shelf ~ sugar + fat + sodium + 
+                                          sugar:fat:sodium, data=cereal2, maxit=200, trace=FALSE)
+anova(mod.fit.Ha_sugar_fat_sodium, mod.fit)  
 ```
-We cannot reject any of the null hypotheses for the possible interaction coefficients. These interaction coefficients are not significant to the model.
+*Comparing alternative models that contain interaction terms with a null hypothesis model that has no interaction terms, we cannot reject the null hypothesis for any of the interaction coefficients. These interaction coefficients are not significant to the model.*
 
 f. Kellogg's Apple Jacks (http://www.applejacks.com) is a cereal marketed toward children. For a serving size of $28$ grams, its sugar content is $12$ grams, fat content is $0.5$ grams, and sodium content is $130$ milligrams. Estimate the shelf probabilities for Apple Jacks.
 
@@ -146,19 +158,22 @@ stand01.spec <- function(w,x) {(w - min(x)) /( max(x) - min(x))}
 newdata <- data.frame(sugar = stand01.spec(w = 12/28, x = cereal$sugar_g/cereal$size_g), 
                       fat = stand01.spec(w = 0.5/28, x = cereal$fat_g/cereal$size_g), 
                       sodium = stand01.spec(w = 130/28, x = cereal$sodium_mg/cereal$size_g))
-newdata
+#newdata
 
 # pi^
 pi.hat<-predict(object = mod.fit, newdata = newdata, type = "probs")
-round(pi.hat, 2)
+#round(pi.hat, 2)
 ```
+*The estimated shelf probabilities for Apple Jacks are:   `r round(pi.hat, 2) ` *
+
 
 g. Construct a plot similar to **Figure 3.3** where the estimated probability for a shelf is on the *y-axis* and the sugar content is on the *x-axis*. Use the mean overall fat and sodium content as the corresponding variable values in the model. Interpret the plot with respect to sugar content.
 ```{r}
 curve(expr = predict(object = mod.fit, newdata = data.frame(sugar = x,
       fat = mean(cereal2$fat), sodium = mean(cereal2$sodium)), type = "probs")[,1], 
       main= expression(Shelf~hat(pi)~"vs Sugar content"),
-      ylab = expression(Shelf~hat(pi)), xlab = "Sugar", xlim = c(min(cereal2$sugar), max(cereal2$sugar)), 
+      ylab = expression(Shelf~hat(pi)), xlab = "Sugar", xlim = c(min(cereal2$sugar),
+                                                                 max(cereal2$sugar)), 
       ylim = c(0,1), col = "black", lty = "solid", lwd = 2, n = 1000,
       panel.first = grid(col = "gray", lty = "dotted"))
 
@@ -177,16 +192,21 @@ curve(expr = predict(object = mod.fit, newdata = data.frame(sugar = x,
       col = "red", lty = "solid", lwd = 2, n = 1000,
       add = TRUE, panel.first = grid(col = "gray", lty = "dotted"))
 
-legend(x=0.2,y=1, legend=c("Shelf 4","Shelf 3","Shelf 2", "Shelf 1"), lty=c("solid"), col=c("red","green", "blue", "black"), bty="n", lwd = c(2,2,2))
+legend(x=0.2,y=1, legend=c("Shelf 4","Shelf 3","Shelf 2", "Shelf 1"), lty=c("solid"),
+       col=c("red","green", "blue", "black"), bty="n", lwd = c(2,2,2))
 
 ```
+
+*For cereals with an average fat and sodium content, those with a below average sugar content have a high estimated probability to be found on the higher shelves, either 3 or 4. As the sugar content increases from average to very high, the cereal is more and more likely to be found on shelf 2, while the probability of being located on a higher shelf declines toward zero. Cereals with average fat and sodium content have a low estimated probability of being found on shelf 1, not exceeding 20%, regardless of their sugar content. *
+
 
 ```{r}
 par(mfrow=c(1,2))
 curve(expr = predict(object = mod.fit, newdata = data.frame(sugar = mean(cereal2$sugar),
       fat =x, sodium = mean(cereal2$sodium)), type = "probs")[,1],
       main= expression(Shelf~hat(pi)~"vs Fat"),
-      ylab = expression(Shelf~hat(pi)), xlab = "Fat", xlim = c(min(cereal2$fat), max(cereal2$fat)), 
+      ylab = expression(Shelf~hat(pi)), xlab = "Fat", xlim = c(min(cereal2$fat), 
+                                                               max(cereal2$fat)), 
       ylim = c(0,1), col = "black", lty = "solid", lwd = 2, n = 1000,
       panel.first = grid(col = "gray", lty = "dotted"))
 
@@ -205,7 +225,8 @@ curve(expr = predict(object = mod.fit, newdata = data.frame(sugar = mean(cereal2
       col = "red", lty = "solid", lwd = 2, n = 1000,
       add = TRUE, panel.first = grid(col = "gray", lty = "dotted"))
 
-legend(x=0,y=1, legend=c("Shelf 4","Shelf 3","Shelf 2", "Shelf 1"), lty=c("solid"), col=c("red","green", "blue", "black"), bty="n", lwd = c(2,2,2))
+legend(x=0,y=1, legend=c("Shelf 4","Shelf 3","Shelf 2", "Shelf 1"), lty=c("solid"), 
+       col=c("red","green", "blue", "black"), bty="n", lwd = c(2,2,2))
 
 curve(expr = predict(object = mod.fit, newdata = data.frame(sugar = mean(cereal2$sugar),
       fat = mean(cereal2$fat), sodium = x), type = "probs")[,1],
@@ -240,7 +261,8 @@ h. Estimate odds ratios and calculate corresponding confidence intervals for eac
 sd.cereal2<-apply(X = cereal2[,-c(1)], MARGIN = 2, FUN = sd)
 # sd.cereal2
 
-#convert sd into (g/serving) units for interpretation. 0-1 are percentages of the overall range for g/serving
+#convert sd into (g/serving) units for interpretation. 
+#0-1 are percentages of the overall range for g/serving
 sd_convert<-function(sd,df_column,df_serving=cereal$size_g){
   var_range<-max(df_column/df_serving)-min(df_column/df_serving)
   return(sd*var_range)
@@ -251,7 +273,7 @@ c.value<-c(1, sd.cereal2)  # class = 1 is first value
 c.value<-c.value[2:4] # drop intercept from c.value
 round(c.value,2)
 
-units<-c(g_serving=sd_convert(c.value[1],cereal$sugar_g),g_serving=sd_convert(c.value[2],cereal$fat_g),mg_serving=sd_convert(c.value[3],cereal$sodium_mg))
+units<-c(g_serving=sd_convert(c.value[1],cereal$sugar_g),g_serving=sd_convert(c.value[2],                                  cereal$fat_g),mg_serving=sd_convert(c.value[3],cereal$sodium_mg))
 round(units,2)
 
 # beta.hat_jr for r = 1, 2, 3  and j = 2, 3, 4
